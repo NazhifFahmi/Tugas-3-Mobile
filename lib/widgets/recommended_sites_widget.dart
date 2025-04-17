@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../screens/home_screen.dart';
 
 class RecommendedSitesWidget extends StatefulWidget {
   @override
@@ -50,97 +51,134 @@ class _RecommendedSitesWidgetState extends State<RecommendedSitesWidget> {
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> sitesToShow = _showFavoritesOnly ? _favorites : _allSites;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Situs Rekomendasi'),
-        actions: [
-          IconButton(
-            icon: Icon(_showFavoritesOnly ? Icons.favorite : Icons.favorite_border),
-            onPressed: () {
-              setState(() {
-                _showFavoritesOnly = !_showFavoritesOnly;
-              });
-            },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blueAccent.withOpacity(0.1), Colors.white],
           ),
-        ],
-      ),
-      body: sitesToShow.isEmpty
-          ? Center(
-              child: Text(
-                _showFavoritesOnly
-                    ? 'Tidak ada situs favorit'
-                    : 'Tidak ada situs rekomendasi',
-                style: TextStyle(fontSize: 18),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: Colors.blue.shade800),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    },
+                  ),
+                  Text(
+                    'Situs Rekomendasi',
+                    style: TextStyle(
+                      color: Colors.blue.shade800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 48), // Placeholder for alignment
+                ],
               ),
-            )
-          : ListView.builder(
-              itemCount: sitesToShow.length,
-              itemBuilder: (context, index) {
-                final site = sitesToShow[index];
-                return Card(
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Image placeholder
-                      Container(
-                        height: 150,
-                        width: double.infinity,
-                        color: Colors.grey[300],
-                        child: Center(
-                          child: Text(
-                            '${site['name']} Image',
-                            style: TextStyle(color: Colors.grey[800]),
-                          ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(16),
+                itemCount: _allSites.length,
+                itemBuilder: (context, index) {
+                  final site = _allSites[index];
+                  return Container(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
                         ),
+                      ],
+                    ),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 150,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                              image: DecorationImage(
+                                image: NetworkImage(site['imageUrl']),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  site['name'],
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      site['name'],
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        site['isFavorite'] ? Icons.favorite : Icons.favorite_border,
+                                        color: site['isFavorite'] ? Colors.red : null,
+                                      ),
+                                      onPressed: () => _toggleFavorite(site),
+                                    ),
+                                  ],
                                 ),
-                                IconButton(
-                                  icon: Icon(
-                                    site['isFavorite']
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: site['isFavorite'] ? Colors.red : null,
+                                SizedBox(height: 8),
+                                Text(site['description']),
+                                SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () => _launchURL(site['url']),
+                                  icon: Icon(Icons.open_in_new),
+                                  label: Text(
+                                    'Kunjungi Situs',
+                                    style: TextStyle(color: Colors.white),
                                   ),
-                                  onPressed: () => _toggleFavorite(site),
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: Size(double.infinity, 40),
+                                    backgroundColor: Colors.blue.shade800,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                            SizedBox(height: 8),
-                            Text(site['description']),
-                            SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () => _launchURL(site['url']),
-                              icon: Icon(Icons.open_in_new),
-                              label: Text('Kunjungi Situs'),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: Size(double.infinity, 40),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             ),
+          ],
+        ),
+      ),
     );
   }
 

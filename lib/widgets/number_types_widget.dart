@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import '../screens/home_screen.dart';
 
 class NumberTypesWidget extends StatefulWidget {
   @override
@@ -19,44 +20,89 @@ class _NumberTypesWidgetState extends State<NumberTypesWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Jenis Bilangan'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blueAccent.withOpacity(0.1), Colors.white],
+          ),
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _inputController,
-              decoration: InputDecoration(
-                labelText: 'Masukkan Bilangan',
-                border: OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.clear),
-                  onPressed: () {
-                    _inputController.clear();
-                    _resetResults();
-                  },
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: Colors.blue.shade800),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    },
+                  ),
+                  Text(
+                    'Jenis Bilangan',
+                    style: TextStyle(
+                      color: Colors.blue.shade800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 48), // Placeholder for alignment
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _inputController,
+                      decoration: InputDecoration(
+                        labelText: 'Masukkan Bilangan',
+                        border: OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: () {
+                            _inputController.clear();
+                            _resetResults();
+                          },
+                        ),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
+                    ),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _checkNumberType,
+                      child: Text(
+                        'Periksa Jenis Bilangan',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: Colors.blue.shade800,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Hasil:',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    ..._numberTypes.entries.map((entry) => _buildResultItem(entry.key, entry.value)),
+                  ],
                 ),
               ),
-              keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
             ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _checkNumberType,
-              child: Text('Periksa Jenis Bilangan'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Hasil:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            ..._numberTypes.entries.map((entry) => _buildResultItem(entry.key, entry.value)),
           ],
         ),
       ),

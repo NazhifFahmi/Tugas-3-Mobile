@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/home_screen.dart';
 
 class TimeConversionWidget extends StatefulWidget {
   @override
@@ -23,66 +24,113 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Konversi Waktu'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blueAccent.withOpacity(0.1), Colors.white],
+          ),
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              elevation: 4,
-              child: Padding(
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: Colors.blue.shade800),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    },
+                  ),
+                  Text(
+                    'Konversi Waktu',
+                    style: TextStyle(
+                      color: Colors.blue.shade800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 48), // Placeholder for alignment
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Mode Konversi',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Mode Konversi',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                Switch(
+                                  value: _isConvertingToYears,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isConvertingToYears = value;
+                                      _clearAllFields();
+                                    });
+                                  },
+                                  activeTrackColor: Colors.blue.shade200,
+                                  activeColor: Colors.blue,
+                                ),
+                              ],
+                            ),
+                            Text(
+                              _isConvertingToYears
+                                  ? 'Konversi dari hari/jam/menit/detik ke tahun'
+                                  : 'Konversi dari tahun ke hari/jam/menit/detik',
+                              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                            ),
+                          ],
                         ),
-                        Switch(
-                          value: _isConvertingToYears,
-                          onChanged: (value) {
-                            setState(() {
-                              _isConvertingToYears = value;
-                              _clearAllFields();
-                            });
-                          },
-                          activeTrackColor: Colors.blue.shade200,
-                          activeColor: Colors.blue,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    if (_isConvertingToYears) 
+                      _buildMultiInputFields()
+                    else 
+                      _buildSingleInputField(),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _convert,
+                      child: Text(
+                        'Konversi',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: Colors.blue.shade800,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
+                      ),
                     ),
-                    Text(
-                      _isConvertingToYears
-                          ? 'Konversi dari hari/jam/menit/detik ke tahun'
-                          : 'Konversi dari tahun ke hari/jam/menit/detik',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                    ),
+                    SizedBox(height: 16),
+                    _buildResultCard(),
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 16),
-            if (_isConvertingToYears) 
-              _buildMultiInputFields()
-            else 
-              _buildSingleInputField(),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _convert,
-              child: Text('Konversi'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-            SizedBox(height: 16),
-            _buildResultCard(),
           ],
         ),
       ),
