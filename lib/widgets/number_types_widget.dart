@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'package:decimal/decimal.dart'; 
+import 'dart:math' as math; 
 import '../screens/home_screen.dart';
 
 class NumberTypesWidget extends StatefulWidget {
+  const NumberTypesWidget({super.key});
+
   @override
   _NumberTypesWidgetState createState() => _NumberTypesWidgetState();
 }
 
 class _NumberTypesWidgetState extends State<NumberTypesWidget> {
+
   final TextEditingController _inputController = TextEditingController();
+  
   Map<String, bool> _numberTypes = {
-    'Prima': false,
-    'Desimal': false,
+    'Prima': false,        
+    'Desimal': false,      
     'Bulat Positif': false,
     'Bulat Negatif': false,
-    'Cacah': false,
+    'Cacah': false,        
   };
+  
+  bool _showLargeNumberWarning = false; 
+  bool _isProcessing = false;          
 
   @override
   Widget build(BuildContext context) {
@@ -37,12 +45,10 @@ class _NumberTypesWidgetState extends State<NumberTypesWidget> {
                 children: [
                   IconButton(
                     icon: Icon(Icons.arrow_back, color: Colors.blue.shade800),
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomeScreen()),
-                      );
-                    },
+                    onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                    ),
                   ),
                   Text(
                     'Jenis Bilangan',
@@ -52,7 +58,7 @@ class _NumberTypesWidgetState extends State<NumberTypesWidget> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(width: 48), // Placeholder for alignment
+                  SizedBox(width: 48),
                 ],
               ),
             ),
@@ -69,13 +75,13 @@ class _NumberTypesWidgetState extends State<NumberTypesWidget> {
                         border: OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(Icons.clear),
-                          onPressed: () {
-                            _inputController.clear();
-                            _resetResults();
-                          },
+                          onPressed: _resetAll,
                         ),
                       ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
                     ),
                     SizedBox(height: 16),
                     ElevatedButton(
@@ -92,13 +98,24 @@ class _NumberTypesWidgetState extends State<NumberTypesWidget> {
                         ),
                       ),
                     ),
+                    if (_showLargeNumberWarning)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          'Catatan: Bilangan sangat besar, pemeriksaan bilangan prima terbatas',
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                      ),
                     SizedBox(height: 24),
                     Text(
                       'Hasil:',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 8),
-                    ..._numberTypes.entries.map((entry) => _buildResultItem(entry.key, entry.value)),
+                    ..._numberTypes.entries.map(_buildResultItem),
                   ],
                 ),
               ),
@@ -109,74 +126,130 @@ class _NumberTypesWidgetState extends State<NumberTypesWidget> {
     );
   }
 
-  Widget _buildResultItem(String type, bool value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(
-            value ? Icons.check_circle : Icons.cancel,
-            color: value ? Colors.green : Colors.red,
-          ),
-          SizedBox(width: 8),
-          Text(
-            type,
-            style: TextStyle(fontSize: 16),
-          ),
-        ],
+  Widget _buildResultItem(MapEntry<String, bool> entry) {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        leading: Icon(
+          entry.value ? Icons.check_circle : Icons.cancel,
+          color: entry.value ? Colors.green : Colors.red,
+        ),
+        title: Text(entry.key),
       ),
     );
   }
 
-  void _resetResults() {
+  void _resetAll() {
     setState(() {
-      _numberTypes.updateAll((key, value) => false);
+      _inputController.clear();
+      _numberTypes.updateAll((_, __) => false);
+      _showLargeNumberWarning = false;
+      _isProcessing = false;
     });
   }
 
-  void _checkNumberType() {
-    String input = _inputController.text.trim();
+  Future<void> _checkNumberType() async {
+    final input = _inputController.text.trim().replaceAll(',', '.');
+    
+    setState(() {
+      _showLargeNumberWarning = false;
+      _numberTypes.updateAll((_, __) => false);
+      _isProcessing = true;
+    });
+
     if (input.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Masukkan bilangan terlebih dahulu')),
-      );
+      _showError('Masukkan bilangan terlebih dahulu');
+      setState(() => _isProcessing = false);
+      return;
+    }
+
+    if (!RegExp(r'^-?\d*\.?\d+$').hasMatch(input)) {
+      _showError('Format bilangan tidak valid');
+      setState(() => _isProcessing = false);
       return;
     }
 
     try {
-      // Coba parse sebagai double untuk memeriksa jika input adalah bilangan valid
-      double number = double.parse(input);
+      final hasDecimalPoint = input.contains('.');
+      final isNegative = input.startsWith('-');
+      final isZero = input == '0' || input == '0.0';
       
-      bool isPrime = _isPrime(number);
-      bool isDecimal = number % 1 != 0;
-      bool isPositiveInteger = number > 0 && number % 1 == 0;
-      bool isNegativeInteger = number < 0 && number % 1 == 0;
-      bool isWhole = number >= 0 && number % 1 == 0;
+      Decimal? number;
+      bool isVeryLarge = false;
+      
+      try {
+        number = Decimal.parse(input);
+      } catch (e) {
+        isVeryLarge = true;
+        setState(() => _showLargeNumberWarning = true);
+      }
+
+      bool isDecimal = false;
+      if (number != null) {
+        isDecimal = (number % Decimal.one) != Decimal.zero;
+      } else {
+        isDecimal = hasDecimalPoint;
+      }
 
       setState(() {
         _numberTypes = {
-          'Prima': isPrime,
+          'Prima': !isVeryLarge && number != null && _isPrime(number),
           'Desimal': isDecimal,
-          'Bulat Positif': isPositiveInteger,
-          'Bulat Negatif': isNegativeInteger,
-          'Cacah': isWhole,
+          'Bulat Positif': !isNegative && !isDecimal && !isZero,
+          'Bulat Negatif': isNegative && !isDecimal,
+          'Cacah': !isNegative && !isDecimal,
         };
+        _isProcessing = false;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Input bukan bilangan yang valid')),
-      );
+      _showError('Terjadi kesalahan dalam memproses bilangan');
+      setState(() => _isProcessing = false);
     }
   }
 
-  bool _isPrime(double number) {
-    // Bilangan prima harus berupa bilangan bulat positif lebih dari 1
-    if (number <= 1 || number % 1 != 0) return false;
+  bool _isPrime(Decimal number) {
+    if (number <= Decimal.one || !number.isInteger) return false;
+    if (number == Decimal.fromInt(2)) return true;
+    if (number % Decimal.fromInt(2) == Decimal.zero) return false;
+
+    final bigIntValue = number.toBigInt();
+    final sqrtValue = _sqrtBigInt(bigIntValue);
+    var i = Decimal.fromInt(3);
+    final max = Decimal.fromBigInt(sqrtValue);
     
-    int n = number.toInt();
-    for (int i = 2; i <= sqrt(n); i++) {
-      if (n % i == 0) return false;
+    while (i <= max) {
+      if (number % i == Decimal.zero) return false;
+      i += Decimal.fromInt(2);
     }
     return true;
+  }
+
+  BigInt _sqrtBigInt(BigInt n) {
+    if (n < BigInt.zero) throw ArgumentError('Negative numbers not supported');
+    if (n < BigInt.two) return n;
+    
+    BigInt a = BigInt.one;
+    BigInt b = n >> 1;
+    while (b >= a) {
+      final mid = (a + b) >> 1;
+      final square = mid * mid;
+      if (square == n) return mid;
+      if (square > n) {
+        b = mid - BigInt.one;
+      } else {
+        a = mid + BigInt.one;
+      }
+    }
+    return a - BigInt.one;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 }

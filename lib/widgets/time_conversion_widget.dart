@@ -14,12 +14,10 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
   final TextEditingController _secondController = TextEditingController();
   
   // Konstanta konversi
-  final double _secondsInMinute = 60;
-  final double _secondsInHour = 60 * 60;
-  final double _secondsInDay = 24 * 60 * 60;
-  final double _secondsInYear = 365.25 * 24 * 60 * 60; // Menggunakan 365.25 untuk akurasi tahun kabisat
-  
-  bool _isConvertingToYears = true; // Mode konversi: true = ke tahun, false = dari tahun
+  final double _daysInYear = 365.0; // Using 365 for simplicity (non-leap year)
+  final double _hoursInDay = 24.0;
+  final double _minutesInHour = 60.0;
+  final double _secondsInMinute = 60.0;
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +47,14 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
                     },
                   ),
                   Text(
-                    'Konversi Waktu',
+                    'Konversi Tahun ke Satuan Waktu',
                     style: TextStyle(
                       color: Colors.blue.shade800,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(width: 48), // Placeholder for alignment
+                  SizedBox(width: 48),
                 ],
               ),
             ),
@@ -75,30 +73,13 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Mode Konversi',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                                Switch(
-                                  value: _isConvertingToYears,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isConvertingToYears = value;
-                                      _clearAllFields();
-                                    });
-                                  },
-                                  activeTrackColor: Colors.blue.shade200,
-                                  activeColor: Colors.blue,
-                                ),
-                              ],
-                            ),
                             Text(
-                              _isConvertingToYears
-                                  ? 'Konversi dari hari/jam/menit/detik ke tahun'
-                                  : 'Konversi dari tahun ke hari/jam/menit/detik',
+                              'Masukkan Jumlah Tahun',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Konversi akan menampilkan dalam hari, jam, menit, dan detik',
                               style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                             ),
                           ],
@@ -106,13 +87,10 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
                       ),
                     ),
                     SizedBox(height: 16),
-                    if (_isConvertingToYears) 
-                      _buildMultiInputFields()
-                    else 
-                      _buildSingleInputField(),
+                    _buildYearInputField(),
                     SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: _convert,
+                      onPressed: _convertYears,
                       child: Text(
                         'Konversi',
                         style: TextStyle(color: Colors.white),
@@ -137,7 +115,7 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
     );
   }
 
-  Widget _buildSingleInputField() {
+  Widget _buildYearInputField() {
     return Card(
       elevation: 2,
       child: Padding(
@@ -145,19 +123,17 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Masukkan Tahun',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
             TextField(
               controller: _yearController,
               decoration: InputDecoration(
-                labelText: 'Tahun (bisa desimal)',
+                labelText: 'Tahun (contoh: 1)',
                 border: OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: Icon(Icons.clear),
-                  onPressed: () => _yearController.clear(),
+                  onPressed: () {
+                    _yearController.clear();
+                    _clearResultFields();
+                  },
                 ),
               ),
               keyboardType: TextInputType.numberWithOptions(decimal: true),
@@ -165,47 +141,6 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildMultiInputFields() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Masukkan Satuan Waktu',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            _buildTimeInputField('Hari', _dayController),
-            SizedBox(height: 8),
-            _buildTimeInputField('Jam', _hourController),
-            SizedBox(height: 8),
-            _buildTimeInputField('Menit', _minuteController),
-            SizedBox(height: 8),
-            _buildTimeInputField('Detik', _secondController),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimeInputField(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-        suffixIcon: IconButton(
-          icon: Icon(Icons.clear),
-          onPressed: () => controller.clear(),
-        ),
-      ),
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
     );
   }
 
@@ -219,17 +154,14 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
           children: [
             Text('Hasil Konversi:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 16),
-            if (_isConvertingToYears)
-              _buildResultItem('Total Tahun', _yearController.text.isEmpty ? '0' : _formatNumber(double.parse(_yearController.text)))
-            else 
-              Column(
-                children: [
-                  _buildResultItem('Hari', _dayController.text.isEmpty ? '0' : _dayController.text),
-                  _buildResultItem('Jam', _hourController.text.isEmpty ? '0' : _hourController.text),
-                  _buildResultItem('Menit', _minuteController.text.isEmpty ? '0' : _minuteController.text),
-                  _buildResultItem('Detik', _secondController.text.isEmpty ? '0' : _secondController.text),
-                ],
-              ),
+            Column(
+              children: [
+                _buildResultItem('Hari', _dayController.text.isEmpty ? '-' : _dayController.text),
+                _buildResultItem('Jam', _hourController.text.isEmpty ? '-' : _hourController.text),
+                _buildResultItem('Menit', _minuteController.text.isEmpty ? '-' : _minuteController.text),
+                _buildResultItem('Detik', _secondController.text.isEmpty ? '-' : _secondController.text),
+              ],
+            ),
           ],
         ),
       ),
@@ -238,7 +170,7 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
 
   Widget _buildResultItem(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -252,61 +184,17 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
     );
   }
 
-  String _formatNumber(double value) {
-    return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 6);
+  void _clearResultFields() {
+    setState(() {
+      _dayController.clear();
+      _hourController.clear();
+      _minuteController.clear();
+      _secondController.clear();
+    });
   }
 
-  void _clearAllFields() {
-    _yearController.clear();
-    _dayController.clear();
-    _hourController.clear();
-    _minuteController.clear();
-    _secondController.clear();
-  }
-
-  void _convert() {
-    if (_isConvertingToYears) {
-      _convertToYears();
-    } else {
-      _convertFromYears();
-    }
-  }
-
-  void _convertToYears() {
+  void _convertYears() {
     try {
-      double days = double.tryParse(_dayController.text) ?? 0;
-      double hours = double.tryParse(_hourController.text) ?? 0;
-      double minutes = double.tryParse(_minuteController.text) ?? 0;
-      double seconds = double.tryParse(_secondController.text) ?? 0;
-      
-      // Konversi semua ke detik
-      double totalSeconds = 
-          days * _secondsInDay +
-          hours * _secondsInHour +
-          minutes * _secondsInMinute +
-          seconds;
-      
-      // Konversi detik ke tahun
-      double totalYears = totalSeconds / _secondsInYear;
-      
-      // Update field tahun
-      setState(() {
-        _yearController.text = _formatNumber(totalYears);
-        _dayController.clear();
-        _hourController.clear();
-        _minuteController.clear();
-        _secondController.clear();
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error konversi: $e')),
-      );
-    }
-  }
-
-  void _convertFromYears() {
-    try {
-      // Ambil input tahun
       if (_yearController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Masukkan jumlah tahun terlebih dahulu')),
@@ -316,48 +204,31 @@ class _TimeConversionWidgetState extends State<TimeConversionWidget> {
       
       double years = double.parse(_yearController.text);
       
-      // Konversi tahun ke detik
-      double totalSeconds = years * _secondsInYear;
+      // Calculate all values directly
+      double days = years * _daysInYear;
+      double hours = days * _hoursInDay;
+      double minutes = hours * _minutesInHour;
+      double seconds = minutes * _secondsInMinute;
       
-      // Hitung hari
-      double totalDays = totalSeconds / _secondsInDay;
-      int days = totalDays.floor();
-      double remainingSeconds = totalSeconds - (days * _secondsInDay);
+      // Format the numbers
+      String formattedDays = days.toStringAsFixed(days.truncateToDouble() == days ? 0 : 2);
+      String formattedHours = hours.toStringAsFixed(hours.truncateToDouble() == hours ? 0 : 2);
+      String formattedMinutes = minutes.toStringAsFixed(minutes.truncateToDouble() == minutes ? 0 : 2);
+      String formattedSeconds;
       
-      // Hitung jam
-      double totalHours = remainingSeconds / _secondsInHour;
-      int hours = totalHours.floor();
-      remainingSeconds -= hours * _secondsInHour;
-      
-      // Hitung menit
-      double totalMinutes = remainingSeconds / _secondsInMinute;
-      int minutes = totalMinutes.floor();
-      remainingSeconds -= minutes * _secondsInMinute;
-      
-      // Hitung detik (dibulatkan untuk menghindari floating point error)
-      int seconds = remainingSeconds.round();
-      
-      // Handle overflow (jika detik dibulatkan menjadi 60)
-      if (seconds >= 60) {
-        seconds -= 60;
-        minutes += 1;
-      }
-      if (minutes >= 60) {
-        minutes -= 60;
-        hours += 1;
-      }
-      if (hours >= 24) {
-        hours -= 24;
-        days += 1;
+      // Format seconds in scientific notation if too large
+      if (seconds >= 1e6) {
+        formattedSeconds = seconds.toStringAsExponential(2).replaceAll('e+', 'e+');
+      } else {
+        formattedSeconds = seconds.toStringAsFixed(seconds.truncateToDouble() == seconds ? 0 : 2);
       }
       
       // Update fields
       setState(() {
-        _yearController.clear();
-        _dayController.text = days.toString();
-        _hourController.text = hours.toString();
-        _minuteController.text = minutes.toString();
-        _secondController.text = seconds.toString();
+        _dayController.text = formattedDays;
+        _hourController.text = formattedHours;
+        _minuteController.text = formattedMinutes;
+        _secondController.text = formattedSeconds;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
