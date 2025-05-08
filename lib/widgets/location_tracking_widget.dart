@@ -15,7 +15,7 @@ class _LocationTrackingWidgetState extends State<LocationTrackingWidget> {
   Position? _currentPosition;
   String _address = 'Mencari lokasi...';
   bool _isLoading = true;
-  final String _tomtomApiKey = 'zyfvME2xfvZxL53tDFcrELrbn8halTwu'; // Ganti dengan API key TomTom Anda
+  final String _tomtomApiKey = 'gDg6vaHA8AWLG7YL3gdS3e3nkPZpLGQt'; 
   final MapController _mapController = MapController();
 
   @override
